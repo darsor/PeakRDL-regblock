@@ -22,8 +22,7 @@ class WBufLogicGenerator(RDLForLoopGenerator):
     def enter_AddressableComponent(self, node: AddressableNode) -> WalkerAction:
         if node.external:
             return WalkerAction.SkipDescendants
-        super().enter_AddressableComponent(node)
-        return WalkerAction.Continue
+        return super().enter_AddressableComponent(node)
 
     def enter_Reg(self, node: 'RegNode') -> None:
         super().enter_Reg(node)
