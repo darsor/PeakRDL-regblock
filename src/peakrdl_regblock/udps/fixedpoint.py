@@ -5,9 +5,36 @@ from systemrdl.node import Node, FieldNode
 from systemrdl.udp import UDPDefinition
 
 
+class Int64(int):
+    """
+    A subclass of int that treats the initialized value as a signed 64-bit integer.
+    Values are clamped/wrapped into [-2^63, 2^63 - 1] on construction.
+
+    Examples
+    --------
+    >>> Int64(0xFFFFFFFFFFFFFFFF)
+    Int64(-1)
+    """
+
+    def __new__(cls, value=0):
+        if isinstance(value, str):
+            value = int(value, 0)  # respect 0x / 0b / 0o prefixes
+        # Mask to 64 bits, then reinterpret as signed
+        value &= (1 << 64) - 1
+        if value >= (1 << 63):
+            value -= (1 << 64)
+        return super().__new__(cls, value)
+
+    def __repr__(self):
+        return f"Int64({int(self)})"
+
+    def __str__(self):
+        return f"{int(self)}"
+
+
 class _FixedpointWidth(UDPDefinition):
     valid_components = {Field}
-    valid_type = int
+    valid_type = Int64
 
     def validate(self, node: "Node", value: Any) -> None:
         assert isinstance(node, FieldNode)
@@ -35,8 +62,9 @@ class _FixedpointWidth(UDPDefinition):
         # ensure node width = fracwidth + intwidth
         if intwidth + fracwidth != node.width:
             self.msg.error(
-                f"Number of integer bits ({intwidth}) plus number of fractional bits ({fracwidth})"
-                f" must be equal to the width of the component ({node.width}).",
+                f"Number of integer bits ({str(intwidth)}) plus number of fractional "
+                f"bits ({str(fracwidth)}) must be equal to the width of the component "
+                f"({node.width}).",
                 prop_ref
             )
 
